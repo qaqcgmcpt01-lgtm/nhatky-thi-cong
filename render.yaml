@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: nhatky-thi-cong
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app
+    envVars:
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: DATA_DIR
+        value: /data
+    disk:
+      name: nhatky-data
+      mountPath: /data
+      sizeGB: 1
