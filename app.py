@@ -138,14 +138,15 @@ def upload():
         }), 503
 
     try:
-        # Mỗi dự án/ngày là 1 "folder" ảo trên Cloudinary
+        # Dùng public_id đầy đủ đường dẫn — KHÔNG truyền thêm folder để tránh xung đột
         public_id = f"nhatky/{proj}/{date}/{int(time.time()*1000)}"
         result = cloudinary.uploader.upload(
             f,
             public_id=public_id,
-            folder=f"nhatky/{proj}/{date}",
             resource_type="image",
+            overwrite=True,
         )
+        print(f"✅ Upload OK: public_id={result.get('public_id')} url={result.get('secure_url')}")
         return jsonify({
             "ok": True,
             "filename": os.path.basename(result["public_id"]) + "." + result["format"],
@@ -166,6 +167,7 @@ def list_images():
     try:
         result = cloudinary.api.resources(
             type="upload",
+            resource_type="image",
             prefix=f"nhatky/{proj}/{date}/",
             max_results=200,
         )
@@ -178,8 +180,10 @@ def list_images():
             }
             for r in result.get("resources", [])
         ]
+        print(f"📷 list_images proj={proj} date={date} → {len(images)} ảnh")
         return jsonify({"ok": True, "images": images})
     except Exception as e:
+        traceback.print_exc()
         return jsonify({"ok": True, "images": [], "warning": str(e)})
 
 
