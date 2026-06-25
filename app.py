@@ -23,8 +23,23 @@ import cloudinary.uploader
 # ── CẤU HÌNH ──────────────────────────────────────────────────
 CLAUDE_KEY = os.environ.get("CLAUDE_API_KEY", "")
 DATA_DIR   = os.environ.get("DATA_DIR", "/data")  # Render Persistent Disk mount path
-LOGS_DIR   = os.path.join(DATA_DIR, "logs")
-os.makedirs(LOGS_DIR, exist_ok=True)
+
+def _setup_logs_dir(base_dir):
+    """Tạo thư mục logs; nếu base_dir không có quyền (Disk chưa gắn),
+    tự động lùi về thư mục tạm trong code (mất khi redeploy nhưng không crash app)."""
+    try:
+        target = os.path.join(base_dir, "logs")
+        os.makedirs(target, exist_ok=True)
+        return target, True
+    except PermissionError:
+        fallback = os.path.join(os.path.dirname(os.path.abspath(__file__)), "_local_logs")
+        os.makedirs(fallback, exist_ok=True)
+        print(f"⚠️  Không có quyền ghi vào {base_dir} (Persistent Disk chưa gắn). "
+              f"Dùng tạm {fallback} — DỮ LIỆU SẼ MẤT KHI REDEPLOY. "
+              f"Vào Render → Disk → Add Disk, mount path = {base_dir}")
+        return fallback, False
+
+LOGS_DIR, DISK_OK = _setup_logs_dir(DATA_DIR)
 
 cloudinary.config(
     cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME", ""),
@@ -217,6 +232,8 @@ def healthz():
         "status": "ok",
         "claude_configured": bool(CLAUDE_KEY),
         "cloudinary_configured": bool(cloudinary.config().cloud_name),
+        "persistent_disk_ok": DISK_OK,
+        "logs_dir": LOGS_DIR,
     })
 
 
