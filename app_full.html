@@ -508,6 +508,37 @@ textarea{resize:vertical;min-height:65px}
           </div>
         </div>
 
+        <!-- NGHIỆM THU -->
+        <div class="card">
+          <div class="card-head">
+            <div class="ch-l"><div class="cdot" style="background:var(--green)"></div><span class="ctitle">Nghiệm thu công tác</span><span style="font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:1px 7px">Đã hoàn thành trong ngày</span></div>
+            <div style="display:flex;gap:4px">
+              <button class="add-r" style="width:auto;margin:0;padding:4px 8px;font-size:11px" onclick="copyHMToNT()">↩ Từ hạng mục</button>
+              <button class="add-r" style="width:auto;margin:0;padding:4px 8px;font-size:11px" onclick="addNTRow()">+ Thêm</button>
+            </div>
+          </div>
+          <div class="card-body" style="padding:9px">
+            <div class="ts"><table class="tt"><thead><tr><th style="width:28%">Công tác nghiệm thu</th><th style="width:24%">Vị trí</th><th style="width:24%">Người nghiệm thu</th><th style="width:20%">Ghi chú</th><th style="width:4%"></th></tr></thead><tbody id="ntBody"></tbody></table></div>
+            <button class="add-r" onclick="addNTRow()">+ Thêm công tác nghiệm thu</button>
+          </div>
+        </div>
+
+        <!-- Ý KIẾN CÁC BÊN -->
+        <div class="card">
+          <div class="card-head"><div class="ch-l"><div class="cdot" style="background:var(--purple)"></div><span class="ctitle">Ý kiến các bên</span></div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+            <label class="lbl">Ý kiến Nhà thầu thi công
+              <textarea id="opNT" rows="2" placeholder="Ý kiến, đề xuất của nhà thầu..." style="margin-top:5px"></textarea>
+            </label>
+            <label class="lbl">Ý kiến Tư vấn giám sát
+              <textarea id="opTVGS" rows="2" placeholder="Ý kiến của TVGS..." style="margin-top:5px"></textarea>
+            </label>
+            <label class="lbl">Ý kiến Chủ đầu tư
+              <textarea id="opCDT" rows="2" placeholder="Ý kiến của CĐT..." style="margin-top:5px"></textarea>
+            </label>
+          </div>
+        </div>
+
         <!-- GHI CHÚ -->
         <div class="card">
           <div class="card-head"><div class="ch-l"><div class="cdot" style="background:var(--orange)"></div><span class="ctitle">Ghi chú & Khó khăn</span></div></div>
@@ -936,7 +967,7 @@ async function appSave(){
     total_workers:parseInt(document.getElementById('totWorkers').value)||getWData().reduce((s,r)=>s+r.qty,0),
     main_equipment:document.getElementById('mainEquip').value,
     workers:getWData(),equipment:getEData(),bch,xac_nhan:xn,
-    work_items:getHMData(),note:document.getElementById('noteText').value,
+    work_items:getHMData(),nghiem_thu:getNTData(),y_kien:getOpinions(),note:document.getElementById('noteText').value,
   };
   // Luôn lưu vào localStorage TRƯỚC — đây là bản chính, không bao giờ mất khi server restart
   const logKey='nk_log_'+curProj.id+'_'+toYMD(curDate);
@@ -985,6 +1016,8 @@ async function loadLog(){
   if(log.bch?.length)setBData(log.bch);else setTimeout(()=>{if(!document.querySelectorAll('#bBody tr').length)prevBCH()},400);
   if(log.xac_nhan?.length)setXData(log.xac_nhan);
   setHMData(log.work_items||[]);
+  setNTData(log.nghiem_thu||[]);
+  setOpinions(log.y_kien||{});
 }
 
 function resetForm(){
@@ -992,6 +1025,7 @@ function resetForm(){
   document.getElementById('totWorkers').value='';document.getElementById('mainEquip').value='';document.getElementById('noteText').value='';
   ['wM','wA'].forEach(id=>document.getElementById(id).querySelectorAll('.w-chip').forEach((c,i)=>c.classList.toggle('sel',i===0)));
   checkRain();setHMData([]);setWData([]);setEData([]);document.getElementById('bBody').innerHTML='';document.getElementById('xBody').innerHTML='';
+  document.getElementById('ntBody').innerHTML='';setOpinions({});
 }
 
 // ── WEATHER ──
@@ -1159,6 +1193,29 @@ function addHMRow(d={}){
 function getHMData(){return Array.from(document.querySelectorAll('#hmBody tr')).map(tr=>{const i=tr.querySelectorAll('input,select');return{hang_muc:i[0]?.value||'',mo_ta:i[1]?.value||'',vi_tri:i[2]?.value||'',khoi_luong:parseFloat(i[3]?.value)||0,don_vi:i[4]?.value||'m³',to_doi:i[5]?.value||''}})}
 function setHMData(rows=[]){document.getElementById('hmBody').innerHTML='';if(rows.length)rows.forEach(addHMRow);else addHMRow()}
 
+// ── NGHIỆM THU ──
+function addNTRow(d={}){
+  const tb=document.getElementById('ntBody');const tr=document.createElement('tr');
+  tr.innerHTML=`<td><input type="text" value="${d.hang_muc||''}" placeholder="VD: Bê tông sàn tầng 3"></td>
+    <td><input type="text" value="${d.vi_tri||''}" placeholder="Vị trí..."></td>
+    <td><input type="text" value="${d.nguoi_nghiem_thu||''}" placeholder="Họ tên..."></td>
+    <td><input type="text" value="${d.note||''}" placeholder="Ghi chú"></td>
+    <td><button class="del-btn" onclick="this.closest('tr').remove()">×</button></td>`;
+  tb.appendChild(tr);
+}
+function getNTData(){return Array.from(document.querySelectorAll('#ntBody tr')).map(tr=>{const i=tr.querySelectorAll('input');return{hang_muc:i[0]?.value||'',vi_tri:i[1]?.value||'',nguoi_nghiem_thu:i[2]?.value||'',note:i[3]?.value||''}}).filter(r=>r.hang_muc)}
+function setNTData(rows=[]){document.getElementById('ntBody').innerHTML='';rows.forEach(addNTRow)}
+function copyHMToNT(){
+  const hm=getHMData().filter(r=>r.hang_muc);
+  if(!hm.length){toast('Chưa có hạng mục thi công nào để lấy','info');return}
+  hm.forEach(r=>addNTRow({hang_muc:r.hang_muc,vi_tri:r.vi_tri,nguoi_nghiem_thu:'',note:''}));
+  toast('↩ Đã lấy '+hm.length+' công tác từ Hạng mục thi công','ok');
+}
+
+// ── Ý KIẾN CÁC BÊN ──
+function getOpinions(){return{nha_thau:document.getElementById('opNT').value,tvgs:document.getElementById('opTVGS').value,cdt:document.getElementById('opCDT').value}}
+function setOpinions(o={}){document.getElementById('opNT').value=o.nha_thau||'';document.getElementById('opTVGS').value=o.tvgs||'';document.getElementById('opCDT').value=o.cdt||''}
+
 // ── PREV DAY ──
 async function loadPrev(type){
   if(!curProj){toast('Chọn dự án trước','err');return}
@@ -1186,8 +1243,11 @@ async function loadImages(){
   if(!curProj){images=[];renderImgs();return}
   try{
     const listUrl=`/images?proj=${curProj.id}&date=${toYMD(curDate)}`;
-    const r=await fetch(listUrl);const d=await r.json();images=d.images||[];renderImgs()
-  }catch{images=[];renderImgs()}
+    const r=await fetch(listUrl);const d=await r.json();
+    images=d.images||[];
+    if(d.warning)console.warn('loadImages warning:',d.warning);
+    renderImgs();
+  }catch(e){console.error('loadImages lỗi:',e);images=[];renderImgs()}
 }
 function renderImgs(){
   const g=document.getElementById('imgGrid');if(!g)return;
