@@ -513,7 +513,7 @@ textarea{resize:vertical;min-height:65px}
           <div class="card-head">
             <div class="ch-l"><div class="cdot" style="background:var(--green)"></div><span class="ctitle">Nghiệm thu công tác</span><span style="font-size:10px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:1px 7px">Đã hoàn thành trong ngày</span></div>
             <div style="display:flex;gap:4px">
-              <button class="add-r" style="width:auto;margin:0;padding:4px 8px;font-size:11px" onclick="copyHMToNT()">↩ Từ hạng mục</button>
+              <button class="add-r" style="width:auto;margin:0;padding:4px 8px;font-size:11px" onclick="copyHMToNT()" title="Tự động thêm khi nhập Hạng mục — bấm đây nếu muốn đồng bộ lại toàn bộ">↩ Đồng bộ lại</button>
               <button class="add-r" style="width:auto;margin:0;padding:4px 8px;font-size:11px" onclick="addNTRow()">+ Thêm</button>
             </div>
           </div>
@@ -1181,9 +1181,9 @@ function addHMRow(d={}){
   const tb=document.getElementById('hmBody');const tr=document.createElement('tr');
   const allCT=CTs();const ctOpts=allCT.length?allCT.map(c=>`<option value="${c.name}" ${d.hang_muc===c.name?'selected':''}>${c.name}</option>`).join(''):['Bê tông sàn','Cốt thép','Ván khuôn','Xây tường','Hoàn thiện','Khác'].map(c=>`<option value="${c}" ${d.hang_muc===c?'selected':''}>${c}</option>`).join('');
   const dvOpts=DVT.map(v=>`<option value="${v}" ${d.don_vi===v?'selected':''}>${v}</option>`).join('');
-  tr.innerHTML=`<td><select style="background:transparent;border:none;border-right:1px solid var(--border);color:var(--text);padding:6px 5px;font-size:11px;width:100%;font-family:inherit">${ctOpts}</select></td>
+  tr.innerHTML=`<td><select onchange="autoSyncNT(this)" style="background:transparent;border:none;border-right:1px solid var(--border);color:var(--text);padding:6px 5px;font-size:11px;width:100%;font-family:inherit">${ctOpts}</select></td>
     <td><input type="text" value="${d.mo_ta||''}" placeholder="Mô tả..."></td>
-    <td><input type="text" value="${d.vi_tri||''}" placeholder="Line 1..."></td>
+    <td><input type="text" value="${d.vi_tri||''}" placeholder="Line 1..." onblur="autoSyncNT(this)"></td>
     <td><input type="number" value="${d.khoi_luong||''}" placeholder="0" min=0 step=0.1 style="max-width:56px"></td>
     <td><select style="background:transparent;border:none;border-right:1px solid var(--border);color:var(--text);padding:6px 4px;font-size:11px;width:100%;font-family:inherit">${dvOpts}</select></td>
     <td><input type="text" value="${d.to_doi||''}" placeholder="Tổ A..."></td>
@@ -1192,6 +1192,25 @@ function addHMRow(d={}){
 }
 function getHMData(){return Array.from(document.querySelectorAll('#hmBody tr')).map(tr=>{const i=tr.querySelectorAll('input,select');return{hang_muc:i[0]?.value||'',mo_ta:i[1]?.value||'',vi_tri:i[2]?.value||'',khoi_luong:parseFloat(i[3]?.value)||0,don_vi:i[4]?.value||'m³',to_doi:i[5]?.value||''}})}
 function setHMData(rows=[]){document.getElementById('hmBody').innerHTML='';if(rows.length)rows.forEach(addHMRow);else addHMRow()}
+
+// Tự đồng bộ sang Nghiệm thu khi nhập Hạng mục — KHÔNG tự xóa khi xóa Hạng mục
+function autoSyncNT(el){
+  const tr=el.closest('tr');
+  const sel=tr.querySelector('select');
+  const viTriInp=tr.querySelectorAll('input')[1]; // input vị trí (index 1 sau mô tả)
+  const hangMuc=sel?.value||'';
+  const viTri=viTriInp?.value||'';
+  if(!hangMuc)return;
+  // Kiểm tra đã có trong Nghiệm thu chưa (theo công tác + vị trí) — tránh trùng
+  const existed=Array.from(document.querySelectorAll('#ntBody tr')).some(ntr=>{
+    const i=ntr.querySelectorAll('input');
+    return (i[0]?.value||'')===hangMuc && (i[1]?.value||'')===viTri;
+  });
+  if(!existed){
+    addNTRow({hang_muc:hangMuc,vi_tri:viTri,nguoi_nghiem_thu:'',note:''});
+    toast('✅ Đã tự thêm "'+hangMuc+'" vào Nghiệm thu','ok');
+  }
+}
 
 // ── NGHIỆM THU ──
 function addNTRow(d={}){
@@ -1208,8 +1227,15 @@ function setNTData(rows=[]){document.getElementById('ntBody').innerHTML='';rows.
 function copyHMToNT(){
   const hm=getHMData().filter(r=>r.hang_muc);
   if(!hm.length){toast('Chưa có hạng mục thi công nào để lấy','info');return}
-  hm.forEach(r=>addNTRow({hang_muc:r.hang_muc,vi_tri:r.vi_tri,nguoi_nghiem_thu:'',note:''}));
-  toast('↩ Đã lấy '+hm.length+' công tác từ Hạng mục thi công','ok');
+  let added=0;
+  hm.forEach(r=>{
+    const existed=Array.from(document.querySelectorAll('#ntBody tr')).some(ntr=>{
+      const i=ntr.querySelectorAll('input');
+      return (i[0]?.value||'')===r.hang_muc && (i[1]?.value||'')===r.vi_tri;
+    });
+    if(!existed){addNTRow({hang_muc:r.hang_muc,vi_tri:r.vi_tri,nguoi_nghiem_thu:'',note:''});added++}
+  });
+  toast(added?`↩ Đã thêm ${added} công tác mới`:'Tất cả công tác đã có trong Nghiệm thu','ok');
 }
 
 // ── Ý KIẾN CÁC BÊN ──
