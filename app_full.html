@@ -885,8 +885,27 @@ function updateProjPill(){
 }
 function updateBanner(){
   const b=document.getElementById('appBanner');const p=projects.length;
-  if(!p){b.style.cssText='display:block;padding:5px 14px;font-size:11px;text-align:center;background:rgba(239,68,68,.1);border-bottom-color:rgba(239,68,68,.2);color:#fca5a5';b.textContent='⚠️ Chưa có dự án — vào Admin để nhập'}
-  else{b.style.cssText='display:block;padding:5px 14px;font-size:11px;text-align:center;background:rgba(34,197,94,.07);border-bottom-color:rgba(34,197,94,.18);color:#86efac';b.textContent='✅ '+p+' dự án'+(curProj?' · '+curProj.code+' '+curProj.name.split('—')[0].trim():'')}
+  if(!p){b.innerHTML='⚠️ Chưa có dự án — vào Admin để nhập';b.style.cssText='display:block;padding:5px 14px;font-size:11px;text-align:center;background:rgba(239,68,68,.1);border-bottom-color:rgba(239,68,68,.2);color:#fca5a5'}
+  else{
+    b.innerHTML='✅ '+p+' dự án'+(curProj?' · '+curProj.code+' '+curProj.name.split('—')[0].trim():'')+' &nbsp; <button onclick="syncAllToServer()" style="background:none;border:1px solid currentColor;border-radius:10px;padding:1px 9px;font-size:10px;color:inherit;cursor:pointer;font-family:inherit">🔄 Đồng bộ lại tất cả</button>';
+    b.style.cssText='display:block;padding:5px 14px;font-size:11px;text-align:center;background:rgba(34,197,94,.07);border-bottom-color:rgba(34,197,94,.18);color:#86efac';
+  }
+}
+
+async function syncAllToServer(){
+  const keys=Object.keys(localStorage).filter(k=>k.startsWith('nk_log_'));
+  if(!keys.length){toast('Chưa có nhật ký nào trong máy để đồng bộ','info');return}
+  toast('🔄 Đang đồng bộ '+keys.length+' nhật ký lên server...','info');
+  let ok=0,fail=0;
+  for(const k of keys){
+    try{
+      const data=localStorage.getItem(k);
+      const r=await fetch('/save_log',{method:'POST',headers:{'Content-Type':'application/json'},body:data});
+      const d=await r.json();
+      if(d.ok)ok++;else fail++;
+    }catch{fail++}
+  }
+  toast(`✅ Đồng bộ xong: ${ok} thành công${fail?', '+fail+' lỗi':''}`,fail?'info':'ok');
 }
 
 function switchMod(name, idx){
@@ -919,23 +938,41 @@ async function appSave(){
     workers:getWData(),equipment:getEData(),bch,xac_nhan:xn,
     work_items:getHMData(),note:document.getElementById('noteText').value,
   };
+  // Luôn lưu vào localStorage TRƯỚC — đây là bản chính, không bao giờ mất khi server restart
+  const logKey='nk_log_'+curProj.id+'_'+toYMD(curDate);
+  localStorage.setItem(logKey,JSON.stringify(pay));
+
+  // Đồng thời gửi lên server làm bản phụ (để máy khác cũng xem được)
   const saveUrl='/save_log';
   try{
     const r=await fetch(saveUrl,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(pay)});
     const d=await r.json();
-    if(d.ok)toast('✅ Đã lưu nhật ký '+toDisp(curDate),'ok');else toast('❌ '+d.error,'err');
+    if(d.ok)toast('✅ Đã lưu nhật ký '+toDisp(curDate),'ok');
+    else toast('💾 Lưu trên máy — server lỗi: '+(d.error||''),'info');
   }catch{
-    localStorage.setItem('nk_log_'+curProj.id+'_'+toYMD(curDate),JSON.stringify(pay));
-    toast('💾 Lưu local (chưa có server)','info');
+    toast('💾 Đã lưu trên máy (server tạm không phản hồi)','info');
   }
 }
 
 async function loadLog(){
   if(!curProj)return;
   let log=null;
+  const logKey='nk_log_'+curProj.id+'_'+toYMD(curDate);
+  const localCopy=localStorage.getItem(logKey);
+
   const loadUrl=`/load_log?proj=${curProj.id}&date=${toYMD(curDate)}`;
-  try{const r=await fetch(loadUrl);const d=await r.json();log=d.log}
-  catch{const lc=localStorage.getItem('nk_log_'+curProj.id+'_'+toYMD(curDate));if(lc)log=JSON.parse(lc)}
+  try{
+    const r=await fetch(loadUrl);const d=await r.json();
+    log=d.log;
+    if(!log&&localCopy){
+      // Server mất dữ liệu (vừa restart) nhưng máy mình còn — tự đồng bộ lại lên server
+      log=JSON.parse(localCopy);
+      fetch('/save_log',{method:'POST',headers:{'Content-Type':'application/json'},body:localCopy}).catch(()=>{});
+      toast('🔄 Server vừa khởi động lại — đã tự đồng bộ lại từ máy bạn','info');
+    }
+  }catch{
+    if(localCopy)log=JSON.parse(localCopy);
+  }
   if(!log){resetForm();setTimeout(()=>{if(!document.querySelectorAll('#bBody tr').length)prevBCH()},300);return}
   ['m','a'].forEach(s=>{const v=s==='m'?log.weather_morning:log.weather_afternoon;document.getElementById('w'+s.toUpperCase()).querySelectorAll('.w-chip').forEach(c=>c.classList.toggle('sel',c.dataset.val===v))});
   checkRain();
