@@ -133,16 +133,13 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--te
 /* App banner */
 #appBanner{padding:5px 14px;font-size:11px;text-align:center;border-bottom:1px solid transparent;flex-shrink:0}
 
-/* App layout */
-.app-layout{display:grid;grid-template-columns:1fr;flex:1;align-items:start}
+/* App layout — luôn 1 cột, ảnh nằm trong dòng chảy chính */
+.app-layout{display:block;flex:1}
 @media(min-width:768px){
-  .app-layout{grid-template-columns:1fr 320px}
-  #appSide{display:flex!important}
   .bottom-nav{display:none!important}
   #pgApp{padding-bottom:0}
 }
-#appMain{min-width:0}
-#appSide{display:none;border-left:1px solid var(--border);background:var(--bg2);position:sticky;top:54px;max-height:calc(100vh - 54px);overflow-y:auto;flex-direction:column}
+#appMain{min-width:0;max-width:760px;margin:0 auto}
 
 /* ═══ MODULES ═══ */
 .mod-screen{display:none;padding:14px;flex-direction:column;gap:12px}
@@ -194,7 +191,8 @@ textarea{resize:vertical;min-height:65px}
 .stab.active{border-bottom-color:var(--accent);color:var(--text)}
 .uzone{margin:10px;border:2px dashed var(--border);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px}
 .uzone:hover,.uzone.drag{border-color:var(--accent);background:rgba(59,130,246,.04)}
-.ig{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:0 10px 10px}
+.ig{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 12px 12px}
+@media(min-width:600px){.ig{grid-template-columns:repeat(4,1fr)}}
 .ith{position:relative;border-radius:7px;overflow:hidden;aspect-ratio:4/3;cursor:pointer;border:2px solid transparent}
 .ith img{width:100%;height:100%;object-fit:cover;display:block}
 .iov{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:5px}
@@ -378,6 +376,7 @@ textarea{resize:vertical;min-height:65px}
     </div>
     <div class="sep"></div>
     <button class="t-btn s" style="font-size:11px;padding:5px 8px;display:none" id="tbWeeklyBtn" onclick="openWeekly()">📈</button>
+    <button class="t-btn s" style="font-size:11px;padding:5px 8px" onclick="exportDayPDF()" title="Xuất PDF nhật ký ngày này">📄 PDF</button>
     <button class="t-btn" style="font-size:11px;padding:5px 10px" onclick="appSave()">💾 Lưu</button>
   </div>
 
@@ -539,85 +538,9 @@ textarea{resize:vertical;min-height:65px}
           </div>
         </div>
 
-        <!-- GHI CHÚ -->
-        <div class="card">
-          <div class="card-head"><div class="ch-l"><div class="cdot" style="background:var(--orange)"></div><span class="ctitle">Ghi chú & Khó khăn</span></div></div>
-          <div class="card-body"><textarea id="noteText" rows="3" placeholder="Khó khăn, sự cố, yêu cầu vật tư..."></textarea></div>
-        </div>
+        <!-- ẢNH HIỆN TRƯỜNG + AI ZALO -->
+        <div class="card" style="overflow:hidden">
 
-        <!-- MOBILE SAVE -->
-        <button onclick="appSave()" style="width:100%;background:var(--accent);border:none;border-radius:var(--r);padding:13px;font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit">💾 Lưu nhật ký</button>
-      </div>
-
-      <!-- MOD: DASHBOARD -->
-      <div class="mod-screen" id="modDash">
-        <div class="stats-row">
-          <div class="stat-box"><div class="sv" id="dM" style="color:var(--accent)">—</div><div class="sl">Tháng</div></div>
-          <div class="stat-box"><div class="sv" id="dW" style="color:var(--yellow)">—</div><div class="sl">Tuần</div></div>
-          <div class="stat-box"><div class="sv" id="dR" style="color:var(--red)">—</div><div class="sl">Ngày mưa</div></div>
-        </div>
-        <div class="card" style="padding:11px">
-          <div style="display:flex;gap:5px;margin-bottom:9px" id="dTabs">
-            <button class="ftab active" onclick="dFilter('day',this)">Hôm nay</button>
-            <button class="ftab" onclick="dFilter('week',this)">Tuần</button>
-            <button class="ftab" onclick="dFilter('month',this)">Tháng</button>
-            <button class="ftab" onclick="dFilter('all',this)">Tất cả</button>
-          </div>
-          <div style="display:flex;gap:7px">
-            <select id="dProjSel" onchange="dRender()" style="flex:1;padding:7px 9px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;font-family:inherit"><option value="">Tất cả dự án</option></select>
-            <button onclick="toast('Xuất đang phát triển','info')" class="t-btn s" style="font-size:11px">📊</button>
-          </div>
-        </div>
-        <div id="dList"></div>
-      </div>
-
-      <!-- MOD: QA/QC -->
-      <div class="mod-screen" id="modQAQC">
-        <div style="display:flex;gap:7px;margin-bottom:2px">
-          <button id="qTab1" onclick="qTab('cl',this)" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✅ Checklist</button>
-          <button id="qTab2" onclick="qTab('ncr',this)" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚠️ NCR</button>
-        </div>
-        <div id="qPanelCL" style="display:flex;flex-direction:column;gap:11px"></div>
-        <div id="qPanelNCR" style="display:none">
-          <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
-            <button onclick="addNCR()" style="padding:7px 14px;border-radius:7px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">+ Tạo NCR</button>
-          </div>
-          <div id="ncrList"></div>
-        </div>
-      </div>
-
-      <!-- MOD: BÁO CÁO -->
-      <div class="mod-screen" id="modReport">
-        <div class="card">
-          <div class="card-head">
-            <div class="ch-l"><div class="cdot" style="background:var(--accent)"></div><span class="ctitle">Báo cáo tuần</span></div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <input type="date" id="rWeekPicker" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-family:inherit;font-size:12px">
-              <button onclick="genWeekly()" style="padding:6px 11px;border-radius:6px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">AI Tổng hợp</button>
-            </div>
-          </div>
-          <div class="card-body" id="rBody" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px">
-            Chọn ngày đầu tuần rồi nhấn AI Tổng hợp
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-head"><div class="ch-l"><div class="cdot" style="background:var(--orange)"></div><span class="ctitle">Xuất form CĐT</span></div></div>
-          <div class="card-body">
-            <div style="border:2px dashed var(--border);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3)" onclick="document.getElementById('rFormIn').click()" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
-              <div style="font-size:26px;margin-bottom:7px">📂</div>
-              <div style="font-size:13px;font-weight:500;color:var(--text2)">Upload form mẫu Chủ đầu tư</div>
-              <div style="font-size:11px;margin-top:3px">Excel · Word · PDF</div>
-              <input type="file" id="rFormIn" accept=".xlsx,.xls,.docx,.doc,.pdf" style="display:none" onchange="rFormUpload(this)">
-            </div>
-            <div id="rFormRes" style="display:none;margin-top:11px"></div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- SIDE: ẢNH + AI (desktop) -->
-    <div id="appSide">
       <div class="stabs">
         <button class="stab active" id="sTabPhoto" onclick="switchSide('photo')">📷 Ảnh <span id="imgCnt" style="background:var(--accent);color:#fff;border-radius:9px;padding:1px 6px;font-size:11px;margin-left:2px">0</span></button>
         <button class="stab" id="sTabAI" onclick="switchSide('ai')">🤖 AI Zalo</button>
@@ -672,7 +595,99 @@ textarea{resize:vertical;min-height:65px}
         </button>
         <div id="aiStatus" style="display:none;text-align:center;padding:6px;font-size:12px;color:var(--text2)"></div>
       </div>
+        </div>
+
+        <!-- GHI CHÚ -->
+        <div class="card">
+          <div class="card-head"><div class="ch-l"><div class="cdot" style="background:var(--orange)"></div><span class="ctitle">Ghi chú & Khó khăn</span></div></div>
+          <div class="card-body"><textarea id="noteText" rows="3" placeholder="Khó khăn, sự cố, yêu cầu vật tư..."></textarea></div>
+        </div>
+
+        <!-- MOBILE SAVE -->
+        <button onclick="appSave()" style="width:100%;background:var(--accent);border:none;border-radius:var(--r);padding:13px;font-size:15px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit">💾 Lưu nhật ký</button>
+      </div>
+
+      <!-- MOD: DASHBOARD -->
+      <div class="mod-screen" id="modDash">
+        <div class="stats-row">
+          <div class="stat-box"><div class="sv" id="dM" style="color:var(--accent)">—</div><div class="sl">Tháng</div></div>
+          <div class="stat-box"><div class="sv" id="dW" style="color:var(--yellow)">—</div><div class="sl">Tuần</div></div>
+          <div class="stat-box"><div class="sv" id="dR" style="color:var(--red)">—</div><div class="sl">Ngày mưa</div></div>
+        </div>
+        <div class="card" style="padding:11px">
+          <div style="display:flex;gap:5px;margin-bottom:9px" id="dTabs">
+            <button class="ftab active" onclick="dFilter('day',this)">Hôm nay</button>
+            <button class="ftab" onclick="dFilter('week',this)">Tuần</button>
+            <button class="ftab" onclick="dFilter('month',this)">Tháng</button>
+            <button class="ftab" onclick="dFilter('all',this)">Tất cả</button>
+          </div>
+          <div style="display:flex;gap:7px">
+            <select id="dProjSel" onchange="dRender()" style="flex:1;padding:7px 9px;background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:6px;font-size:12px;font-family:inherit"><option value="">Tất cả dự án</option></select>
+            <button onclick="toast('Xuất đang phát triển','info')" class="t-btn s" style="font-size:11px">📊</button>
+          </div>
+        </div>
+        <div id="dList"></div>
+      </div>
+
+      <!-- MOD: QA/QC -->
+      <div class="mod-screen" id="modQAQC">
+        <div style="display:flex;gap:7px;margin-bottom:2px">
+          <button id="qTab1" onclick="qTab('cl',this)" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✅ Checklist</button>
+          <button id="qTab2" onclick="qTab('ncr',this)" style="flex:1;padding:9px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">⚠️ NCR</button>
+        </div>
+        <div id="qPanelCL" style="display:flex;flex-direction:column;gap:11px"></div>
+        <div id="qPanelNCR" style="display:none">
+          <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+            <button onclick="addNCR()" style="padding:7px 14px;border-radius:7px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">+ Tạo NCR</button>
+          </div>
+          <div id="ncrList"></div>
+        </div>
+      </div>
+
+      <!-- MOD: BÁO CÁO -->
+      <div class="mod-screen" id="modReport">
+        <div class="card">
+          <div class="card-head"><div class="ch-l"><div class="cdot" style="background:var(--green)"></div><span class="ctitle">📄 Xuất PDF nhật ký</span></div></div>
+          <div class="card-body" style="display:flex;flex-direction:column;gap:10px">
+            <div style="font-size:12px;color:var(--text2)">Xuất 1 ngày cụ thể — đầy đủ tất cả mục, kèm ảnh hiện trường</div>
+            <button onclick="exportDayPDF()" style="width:100%;background:var(--accent);border:none;border-radius:8px;padding:10px;font-size:13px;font-weight:600;color:#fff;cursor:pointer;font-family:inherit">📄 Xuất PDF ngày đang xem</button>
+            <div style="border-top:1px solid var(--border);margin:4px 0"></div>
+            <div style="font-size:12px;color:var(--text2)">Xuất tổng hợp nhiều ngày — tóm tắt nhân công, hạng mục, ghi chú</div>
+            <div class="fr c2">
+              <label class="lbl">Từ ngày<input type="date" id="pdfFrom"></label>
+              <label class="lbl">Đến ngày<input type="date" id="pdfTo"></label>
+            </div>
+            <button onclick="exportRangePDF()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer;font-family:inherit">📄 Xuất PDF tổng hợp khoảng ngày</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div class="ch-l"><div class="cdot" style="background:var(--accent)"></div><span class="ctitle">Báo cáo tuần</span></div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="date" id="rWeekPicker" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-family:inherit;font-size:12px">
+              <button onclick="genWeekly()" style="padding:6px 11px;border-radius:6px;background:var(--accent);border:none;color:#fff;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit">AI Tổng hợp</button>
+            </div>
+          </div>
+          <div class="card-body" id="rBody" style="min-height:100px;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:12px">
+            Chọn ngày đầu tuần rồi nhấn AI Tổng hợp
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><div class="ch-l"><div class="cdot" style="background:var(--orange)"></div><span class="ctitle">Xuất form CĐT</span></div></div>
+          <div class="card-body">
+            <div style="border:2px dashed var(--border);border-radius:8px;padding:22px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3)" onclick="document.getElementById('rFormIn').click()" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor=''">
+              <div style="font-size:26px;margin-bottom:7px">📂</div>
+              <div style="font-size:13px;font-weight:500;color:var(--text2)">Upload form mẫu Chủ đầu tư</div>
+              <div style="font-size:11px;margin-top:3px">Excel · Word · PDF</div>
+              <input type="file" id="rFormIn" accept=".xlsx,.xls,.docx,.doc,.pdf" style="display:none" onchange="rFormUpload(this)">
+            </div>
+            <div id="rFormRes" style="display:none;margin-top:11px"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
+
   </div>
 
   <!-- BOTTOM NAV -->
@@ -1556,6 +1571,147 @@ function renderNCR(){
   }).join('');
 }
 function ncrSt(i,status){ncrList[i].status=status;renderNCR();saveQC()}
+
+// ══════════════════════════════════════════════════════════════
+// XUẤT PDF — dùng print HTML của trình duyệt (không cần thư viện)
+// ══════════════════════════════════════════════════════════════
+const PDF_STYLE=`<style>
+@page{size:A4;margin:14mm}
+body{font-family:'Times New Roman',serif;color:#111;font-size:13px;line-height:1.5;margin:0}
+.pdf-header{text-align:center;margin-bottom:14px;border-bottom:2px solid #111;padding-bottom:10px}
+.pdf-title{font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.pdf-sub{font-size:13px;margin-top:4px}
+.pdf-meta{display:flex;justify-content:space-between;margin-bottom:12px;font-size:12px}
+.pdf-section{margin-bottom:14px}
+.pdf-section-title{font-size:13px;font-weight:700;text-transform:uppercase;background:#eee;padding:4px 8px;margin-bottom:6px;border-left:4px solid #333}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px}
+th,td{border:1px solid #888;padding:4px 7px;text-align:left}
+th{background:#f0f0f0;font-weight:700}
+.pdf-note{white-space:pre-wrap;border:1px solid #ccc;padding:8px;border-radius:4px;background:#fafafa;min-height:20px}
+.pdf-imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.pdf-imgs img{width:120px;height:90px;object-fit:cover;border:1px solid #999;border-radius:3px}
+.pdf-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:20px;text-align:center;font-size:12px}
+.pdf-sign-row div{border-top:1px solid #333;padding-top:6px}
+.pdf-footer{margin-top:24px;text-align:right;font-size:11px;color:#666}
+@media print{.no-print{display:none}}
+</style>`;
+
+function buildDayPdfHtml(log, projName, dateDisp, imgs){
+  const ws=(log.workers||[]).map(w=>`<tr><td>${w.type}</td><td style="text-align:center">${w.qty}</td><td>${w.team||''}</td><td>${w.note||''}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
+  const es=(log.equipment||[]).map(e=>`<tr><td>${e.name}</td><td style="text-align:center">${e.qty}</td><td>${e.unit}</td><td>${e.task||''}</td><td>${e.status}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#999">Không có</td></tr>';
+  const bs=(log.bch||[]).map(b=>`<tr><td>${b.name}</td><td>${b.role}</td><td>${b.unit||''}</td><td style="text-align:center">${b.present?'Có mặt':'Vắng'}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
+  const xs=(log.xac_nhan||[]).map(x=>`<tr><td>${x.name}</td><td>${x.role}</td><td>${x.unit||''}</td><td style="text-align:center">${x.signed?'Đã ký':'Chưa ký'}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
+  const hms=(log.work_items||[]).filter(h=>h.hang_muc).map(h=>`<tr><td>${h.hang_muc}</td><td>${h.mo_ta||''}</td><td>${h.vi_tri||''}</td><td style="text-align:center">${h.khoi_luong||0} ${h.don_vi||''}</td><td>${h.to_doi||''}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#999">Không có</td></tr>';
+  const nts=(log.nghiem_thu||[]).map(n=>`<tr><td>${n.hang_muc}</td><td>${n.vi_tri||''}</td><td>${n.nguoi_nghiem_thu||''}</td><td>${n.note||''}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
+  const yk=log.y_kien||{};
+  const totalWorkers=(log.workers||[]).reduce((s,w)=>s+(w.qty||0),0)||log.total_workers||0;
+  const imgHtml=imgs?.length?`<div class="pdf-imgs">${imgs.slice(0,12).map(i=>`<img src="${i.url}">`).join('')}</div>`:'<p style="color:#999;font-size:12px">Không có ảnh</p>';
+
+  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nhật ký ${dateDisp}</title>${PDF_STYLE}</head><body>
+    <div class="pdf-header">
+      <div class="pdf-title">Nhật ký thi công</div>
+      <div class="pdf-sub">${projName}</div>
+    </div>
+    <div class="pdf-meta">
+      <span><strong>Ngày:</strong> ${dateDisp}</span>
+      <span><strong>Thời tiết:</strong> ${log.weather_morning||''} (sáng) / ${log.weather_afternoon||''} (chiều)</span>
+      <span><strong>Tổng nhân công:</strong> ${totalWorkers} người</span>
+    </div>
+
+    <div class="pdf-section"><div class="pdf-section-title">I. Nhân công</div><table><thead><tr><th>Loại</th><th>SL</th><th>Tổ/Đội</th><th>Ghi chú</th></tr></thead><tbody>${ws}</tbody></table></div>
+    <div class="pdf-section"><div class="pdf-section-title">II. Máy móc thiết bị</div><table><thead><tr><th>Tên máy</th><th>SL</th><th>ĐVT</th><th>Công tác</th><th>Trạng thái</th></tr></thead><tbody>${es}</tbody></table></div>
+    <div class="pdf-section"><div class="pdf-section-title">III. Ban chỉ huy công trường</div><table><thead><tr><th>Họ tên</th><th>Chức vụ</th><th>Đơn vị</th><th>Có mặt</th></tr></thead><tbody>${bs}</tbody></table></div>
+    <div class="pdf-section"><div class="pdf-section-title">IV. Xác nhận nhật ký (Giám sát / CĐT)</div><table><thead><tr><th>Họ tên</th><th>Chức vụ</th><th>Đơn vị</th><th>Đã ký</th></tr></thead><tbody>${xs}</tbody></table></div>
+    <div class="pdf-section"><div class="pdf-section-title">V. Hạng mục thi công</div><table><thead><tr><th>Công tác</th><th>Mô tả</th><th>Vị trí</th><th>Khối lượng</th><th>Tổ đội</th></tr></thead><tbody>${hms}</tbody></table></div>
+    <div class="pdf-section"><div class="pdf-section-title">VI. Nghiệm thu công tác</div><table><thead><tr><th>Công tác</th><th>Vị trí</th><th>Người nghiệm thu</th><th>Ghi chú</th></tr></thead><tbody>${nts}</tbody></table></div>
+    <div class="pdf-section"><div class="pdf-section-title">VII. Ý kiến các bên</div>
+      <p><strong>Nhà thầu:</strong> ${yk.nha_thau||'(không có)'}</p>
+      <p><strong>Tư vấn giám sát:</strong> ${yk.tvgs||'(không có)'}</p>
+      <p><strong>Chủ đầu tư:</strong> ${yk.cdt||'(không có)'}</p>
+    </div>
+    <div class="pdf-section"><div class="pdf-section-title">VIII. Ghi chú & Khó khăn</div><div class="pdf-note">${log.note||'(không có)'}</div></div>
+    <div class="pdf-section"><div class="pdf-section-title">IX. Hình ảnh hiện trường</div>${imgHtml}</div>
+
+    <div class="pdf-sign-row">
+      <div>Chỉ huy trưởng</div>
+      <div>Giám sát</div>
+      <div>Chủ đầu tư</div>
+    </div>
+    <div class="pdf-footer">In từ NhậtKý.TC — ${new Date().toLocaleString('vi-VN')}</div>
+
+    <scr"+"ipt>window.onload=()=>setTimeout(()=>window.print(),400)</scr"+"ipt>
+  </body></html>`;
+}
+
+async function exportDayPDF(){
+  if(!curProj){toast('Chọn dự án trước','err');return}
+  toast('⏳ Đang chuẩn bị PDF...','info');
+  const dateYMD=toYMD(curDate);
+  let log=null;
+  const localCopy=localStorage.getItem('nk_log_'+curProj.id+'_'+dateYMD);
+  if(localCopy)log=JSON.parse(localCopy);
+  else{try{const r=await fetch(`/load_log?proj=${curProj.id}&date=${dateYMD}`);const d=await r.json();log=d.log}catch{}}
+  if(!log){toast('Chưa có dữ liệu nhật ký ngày này để xuất','err');return}
+
+  let imgs=[];
+  try{const r=await fetch(`/images?proj=${curProj.id}&date=${dateYMD}`);const d=await r.json();imgs=d.images||[]}catch{}
+
+  const html=buildDayPdfHtml(log,curProj.name,toDisp(curDate),imgs);
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
+
+// ── XUẤT PDF TỔNG HỢP NHIỀU NGÀY ──
+async function exportRangePDF(){
+  if(!curProj){toast('Chọn dự án trước','err');return}
+  const fromVal=document.getElementById('pdfFrom').value;
+  const toVal=document.getElementById('pdfTo').value;
+  if(!fromVal||!toVal){toast('Chọn đủ khoảng ngày','err');return}
+  const from=new Date(fromVal),to=new Date(toVal);
+  if(from>to){toast('Ngày bắt đầu phải trước ngày kết thúc','err');return}
+
+  toast('⏳ Đang tổng hợp PDF nhiều ngày...','info');
+  const days=[];
+  for(let d=new Date(from);d<=to;d.setDate(d.getDate()+1))days.push(new Date(d));
+  if(days.length>31){toast('Tối đa 31 ngày/lần xuất','err');return}
+
+  let sections='';
+  let dayCount=0;
+  for(const d of days){
+    const ymd=toYMD(d);
+    let log=null;
+    const lc=localStorage.getItem('nk_log_'+curProj.id+'_'+ymd);
+    if(lc)log=JSON.parse(lc);
+    else{try{const r=await fetch(`/load_log?proj=${curProj.id}&date=${ymd}`);const dd=await r.json();log=dd.log}catch{}}
+    if(!log)continue;
+    dayCount++;
+    const totalWorkers=(log.workers||[]).reduce((s,w)=>s+(w.qty||0),0)||log.total_workers||0;
+    const hmSum=(log.work_items||[]).filter(h=>h.hang_muc).map(h=>h.hang_muc+(h.vi_tri?' @ '+h.vi_tri:'')).join('; ')||'(không có)';
+    sections+=`<div class="pdf-section" style="page-break-inside:avoid">
+      <div class="pdf-section-title">${toDisp(d)} — ${log.weather_morning||''}/${log.weather_afternoon||''} — 👷 ${totalWorkers} người</div>
+      <p style="font-size:12px;margin:4px 0"><strong>Hạng mục:</strong> ${hmSum}</p>
+      ${log.note?`<p style="font-size:12px;margin:4px 0"><strong>Ghi chú:</strong> ${log.note}</p>`:''}
+    </div>`;
+  }
+
+  if(!dayCount){toast('Không có dữ liệu trong khoảng ngày này','err');return}
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Báo cáo tổng hợp</title>${PDF_STYLE}</head><body>
+    <div class="pdf-header">
+      <div class="pdf-title">Báo cáo tổng hợp thi công</div>
+      <div class="pdf-sub">${curProj.name}</div>
+      <div class="pdf-sub">Từ ${toDisp(from)} đến ${toDisp(to)} — ${dayCount}/${days.length} ngày có dữ liệu</div>
+    </div>
+    ${sections}
+    <div class="pdf-footer">In từ NhậtKý.TC — ${new Date().toLocaleString('vi-VN')}</div>
+    <scr"+"ipt>window.onload=()=>setTimeout(()=>window.print(),400)</scr"+"ipt>
+  </body></html>`;
+
+  const w=window.open('','_blank');
+  w.document.write(html);
+  w.document.close();
+}
 
 // ══════════════════════════════════════════════════════════════
 // BÁO CÁO
