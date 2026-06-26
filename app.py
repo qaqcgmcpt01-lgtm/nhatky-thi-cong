@@ -19,6 +19,7 @@ import urllib.request
 import urllib.error
 import cloudinary
 import cloudinary.uploader
+import cloudinary.api
 
 # ── CẤU HÌNH ──────────────────────────────────────────────────
 CLAUDE_KEY = os.environ.get("CLAUDE_API_KEY", "")
