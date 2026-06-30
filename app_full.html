@@ -191,13 +191,15 @@ textarea{resize:vertical;min-height:65px}
 .stab.active{border-bottom-color:var(--accent);color:var(--text)}
 .uzone{margin:10px;border:2px dashed var(--border);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px}
 .uzone:hover,.uzone.drag{border-color:var(--accent);background:rgba(59,130,246,.04)}
-.ig{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 12px 12px}
-@media(min-width:600px){.ig{grid-template-columns:repeat(4,1fr)}}
-.ith{position:relative;border-radius:7px;overflow:hidden;aspect-ratio:4/3;cursor:pointer;border:2px solid transparent}
-.ith img{width:100%;height:100%;object-fit:cover;display:block}
-.iov{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.ig{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:4px 14px 16px}
+.ith{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;border:2px solid transparent;background:var(--bg3);transition:transform .15s,box-shadow .15s}
+.ith:hover{transform:scale(1.03);box-shadow:0 6px 20px rgba(0,0,0,.35);z-index:2}
+.ith img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
+.ith:hover img{transform:scale(1.06)}
+.iov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 45%);opacity:0;transition:opacity .15s;display:flex;align-items:flex-end;justify-content:flex-end;gap:6px;padding:8px}
 .ith:hover .iov{opacity:1}
-.ib{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;width:26px;height:26px;border-radius:5px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.ib{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:background .15s}
+.ib:hover{background:rgba(255,255,255,.3)}
 /* AI result box */
 .ai-result-box{background:var(--bg3);border:1px solid var(--green);border-radius:8px;padding:10px;font-size:12px;line-height:1.8;white-space:pre-wrap;max-height:180px;overflow-y:auto;color:var(--text);margin-top:8px}
 /* Dashboard */
@@ -244,9 +246,11 @@ textarea{resize:vertical;min-height:65px}
 .btn-p{background:var(--accent);color:#fff}
 .btn-g{background:var(--bg3);border:1px solid var(--border);color:var(--text2)}
 /* Lightbox */
-.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px}
-.lightbox.open{display:flex}
-.lightbox img{max-width:100%;max-height:90vh;border-radius:8px;object-fit:contain}
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:1000;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.lightbox.open{display:flex;animation:lbFade .2s ease}
+@keyframes lbFade{from{opacity:0}to{opacity:1}}
+.lightbox img{max-width:100%;max-height:90vh;border-radius:10px;object-fit:contain;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:lbZoom .2s ease}
+@keyframes lbZoom{from{transform:scale(.95)}to{transform:scale(1)}}
 .lb-x{position:absolute;top:16px;right:16px;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 /* Toast */
 .toasts{position:fixed;bottom:66px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:6px;align-items:center;width:calc(100% - 24px);max-width:380px}
@@ -542,7 +546,7 @@ textarea{resize:vertical;min-height:65px}
         <div class="card" style="overflow:hidden">
 
       <div class="stabs">
-        <button class="stab active" id="sTabPhoto" onclick="switchSide('photo')">📷 Ảnh <span id="imgCnt" style="background:var(--accent);color:#fff;border-radius:9px;padding:1px 6px;font-size:11px;margin-left:2px">0</span></button>
+        <button class="stab active" id="sTabPhoto" onclick="switchSide('photo')">📷 Ảnh hiện trường <span id="imgCnt" style="background:var(--accent);color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;margin-left:4px">0</span></button>
         <button class="stab" id="sTabAI" onclick="switchSide('ai')">🤖 AI Zalo</button>
       </div>
       <!-- Photo panel -->
@@ -1296,10 +1300,9 @@ function renderImgs(){
   g.innerHTML=images.map(img=>{
     // Dùng URL từ server (/img/...) nếu có, fallback về API
     const url=img.url?img.url:`${API}?action=get_image&project=${curProj?.id}&date=${toYMD(curDate)}&filename=${encodeURIComponent(img.filename)}`;
-    return`<div class="ith"><img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">
+    return`<div class="ith" onclick="openLB('${url}')"><img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">
       <div class="iov">
-        <button class="ib" onclick="openLB('${url}')">🔍</button>
-        <button class="ib" style="background:rgba(239,68,68,.4);border:none" onclick="delImg('${img.filename}')">🗑</button>
+        <button class="ib" style="background:rgba(239,68,68,.45);border:none" onclick="event.stopPropagation();delImg('${img.filename}')" title="Xóa ảnh">🗑</button>
       </div>
     </div>`;
   }).join('');
