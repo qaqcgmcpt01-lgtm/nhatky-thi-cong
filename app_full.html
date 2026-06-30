@@ -191,15 +191,20 @@ textarea{resize:vertical;min-height:65px}
 .stab.active{border-bottom-color:var(--accent);color:var(--text)}
 .uzone{margin:10px;border:2px dashed var(--border);border-radius:8px;padding:14px;text-align:center;cursor:pointer;transition:all .2s;color:var(--text3);font-size:12px}
 .uzone:hover,.uzone.drag{border-color:var(--accent);background:rgba(59,130,246,.04)}
-.ig{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;padding:4px 14px 16px}
-.ith{position:relative;border-radius:10px;overflow:hidden;aspect-ratio:1/1;cursor:pointer;border:2px solid transparent;background:var(--bg3);transition:transform .15s,box-shadow .15s}
-.ith:hover{transform:scale(1.03);box-shadow:0 6px 20px rgba(0,0,0,.35);z-index:2}
-.ith img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
-.ith:hover img{transform:scale(1.06)}
-.iov{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.65) 0%,transparent 45%);opacity:0;transition:opacity .15s;display:flex;align-items:flex-end;justify-content:flex-end;gap:6px;padding:8px}
+.ig{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:4px 14px 16px}
+.ith{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);background:var(--bg3);transition:box-shadow .15s}
+.ith:hover{box-shadow:0 6px 20px rgba(0,0,0,.3)}
+.ith-imgwrap{position:relative;aspect-ratio:4/3;cursor:pointer;overflow:hidden}
+.ith-imgwrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .25s}
+.ith-imgwrap:hover img{transform:scale(1.05)}
+.iov{position:absolute;top:6px;right:6px;display:flex;gap:5px;opacity:0;transition:opacity .15s}
 .ith:hover .iov{opacity:1}
-.ib{background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);color:#fff;width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:background .15s}
-.ib:hover{background:rgba(255,255,255,.3)}
+.ib{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px);transition:background .15s}
+.ib:hover{background:rgba(239,68,68,.6)}
+.ith-cap{padding:7px 9px}
+.ith-cap input{width:100%;background:transparent;border:none;border-top:1px solid var(--border);padding:6px 0 0;font-size:11px;color:var(--text2);font-family:inherit}
+.ith-cap input:focus{outline:none;color:var(--text)}
+.ith-cap input::placeholder{color:var(--text3)}
 /* AI result box */
 .ai-result-box{background:var(--bg3);border:1px solid var(--green);border-radius:8px;padding:10px;font-size:12px;line-height:1.8;white-space:pre-wrap;max-height:180px;overflow-y:auto;color:var(--text);margin-top:8px}
 /* Dashboard */
@@ -1297,15 +1302,26 @@ async function loadImages(){
 function renderImgs(){
   const g=document.getElementById('imgGrid');if(!g)return;
   document.getElementById('imgCnt').textContent=images.length;
-  g.innerHTML=images.map(img=>{
-    // Dùng URL từ server (/img/...) nếu có, fallback về API
+  g.innerHTML=images.map((img,i)=>{
     const url=img.url?img.url:`${API}?action=get_image&project=${curProj?.id}&date=${toYMD(curDate)}&filename=${encodeURIComponent(img.filename)}`;
-    return`<div class="ith" onclick="openLB('${url}')"><img src="${url}" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy">
-      <div class="iov">
-        <button class="ib" style="background:rgba(239,68,68,.45);border:none" onclick="event.stopPropagation();delImg('${img.filename}')" title="Xóa ảnh">🗑</button>
+    const capKey='nk_imgcap_'+(img.public_id||img.filename);
+    const cap=localStorage.getItem(capKey)||'';
+    return`<div class="ith">
+      <div class="ith-imgwrap" onclick="openLB('${url}')">
+        <img src="${url}" loading="lazy">
+        <div class="iov">
+          <button class="ib" onclick="event.stopPropagation();delImg('${img.filename}')" title="Xóa ảnh">🗑</button>
+        </div>
+      </div>
+      <div class="ith-cap">
+        <input type="text" placeholder="Ghi chú cho ảnh này..." value="${cap.replace(/"/g,'&quot;')}" onchange="saveImgCaption('${capKey.replace(/'/g,"\\'")}',this.value)">
       </div>
     </div>`;
   }).join('');
+}
+function saveImgCaption(key,val){
+  if(val)localStorage.setItem(key,val);
+  else localStorage.removeItem(key);
 }
 async function delImg(fn){if(!confirm('Xóa ảnh?'))return;try{
   const delUrl=`/img/${curProj?.id}/${toYMD(curDate)}/${encodeURIComponent(fn)}`;
@@ -1591,8 +1607,10 @@ table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px}
 th,td{border:1px solid #888;padding:4px 7px;text-align:left}
 th{background:#f0f0f0;font-weight:700}
 .pdf-note{white-space:pre-wrap;border:1px solid #ccc;padding:8px;border-radius:4px;background:#fafafa;min-height:20px}
-.pdf-imgs{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
-.pdf-imgs img{width:120px;height:90px;object-fit:cover;border:1px solid #999;border-radius:3px}
+.pdf-imgs{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.pdf-img-card{width:150px;border:1px solid #999;border-radius:4px;overflow:hidden}
+.pdf-img-card img{width:100%;height:110px;object-fit:cover;display:block}
+.pdf-img-cap{font-size:10px;padding:3px 5px;color:#444;border-top:1px solid #ccc;min-height:14px}
 .pdf-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:20px;text-align:center;font-size:12px}
 .pdf-sign-row div{border-top:1px solid #333;padding-top:6px}
 .pdf-footer{margin-top:24px;text-align:right;font-size:11px;color:#666}
@@ -1608,7 +1626,10 @@ function buildDayPdfHtml(log, projName, dateDisp, imgs){
   const nts=(log.nghiem_thu||[]).map(n=>`<tr><td>${n.hang_muc}</td><td>${n.vi_tri||''}</td><td>${n.nguoi_nghiem_thu||''}</td><td>${n.note||''}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
   const yk=log.y_kien||{};
   const totalWorkers=(log.workers||[]).reduce((s,w)=>s+(w.qty||0),0)||log.total_workers||0;
-  const imgHtml=imgs?.length?`<div class="pdf-imgs">${imgs.slice(0,12).map(i=>`<img src="${i.url}">`).join('')}</div>`:'<p style="color:#999;font-size:12px">Không có ảnh</p>';
+  const imgHtml=imgs?.length?`<div class="pdf-imgs">${imgs.slice(0,12).map(i=>{
+    const cap=localStorage.getItem('nk_imgcap_'+(i.public_id||i.filename))||'';
+    return`<div class="pdf-img-card"><img src="${i.url}"><div class="pdf-img-cap">${cap}</div></div>`;
+  }).join('')}</div>`:'<p style="color:#999;font-size:12px">Không có ảnh</p>';
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nhật ký ${dateDisp}</title>${PDF_STYLE}</head><body>
     <div class="pdf-header">
