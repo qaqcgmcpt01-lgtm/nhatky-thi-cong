@@ -1336,7 +1336,8 @@ function focusPaste(){document.getElementById('sStatus').textContent='📋 Ctrl+
 // ── SIDE PANEL ──
 function switchSide(tab){
   sideMode=tab;const isP=tab==='photo';
-  document.getElementById('sPhoto').style.display=isP?'flex':'none';
+  // Dùng class thay vì gán display trực tiếp — tránh đè CSS grid của khung ảnh
+  document.getElementById('sPhoto').style.display=isP?'block':'none';
   document.getElementById('sAI').style.display=isP?'none':'flex';
   document.getElementById('sTabPhoto').classList.toggle('active',isP);
   document.getElementById('sTabAI').classList.toggle('active',!isP);
