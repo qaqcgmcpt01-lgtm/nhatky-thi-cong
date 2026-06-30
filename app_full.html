@@ -1596,75 +1596,169 @@ function ncrSt(i,status){ncrList[i].status=status;renderNCR();saveQC()}
 // XUẤT PDF — dùng print HTML của trình duyệt (không cần thư viện)
 // ══════════════════════════════════════════════════════════════
 const PDF_STYLE=`<style>
-@page{size:A4;margin:14mm}
-body{font-family:'Times New Roman',serif;color:#111;font-size:13px;line-height:1.5;margin:0}
-.pdf-header{text-align:center;margin-bottom:14px;border-bottom:2px solid #111;padding-bottom:10px}
-.pdf-title{font-size:18px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
-.pdf-sub{font-size:13px;margin-top:4px}
-.pdf-meta{display:flex;justify-content:space-between;margin-bottom:12px;font-size:12px}
-.pdf-section{margin-bottom:14px}
-.pdf-section-title{font-size:13px;font-weight:700;text-transform:uppercase;background:#eee;padding:4px 8px;margin-bottom:6px;border-left:4px solid #333}
-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px}
-th,td{border:1px solid #888;padding:4px 7px;text-align:left}
-th{background:#f0f0f0;font-weight:700}
-.pdf-note{white-space:pre-wrap;border:1px solid #ccc;padding:8px;border-radius:4px;background:#fafafa;min-height:20px}
-.pdf-imgs{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
-.pdf-img-card{width:150px;border:1px solid #999;border-radius:4px;overflow:hidden}
-.pdf-img-card img{width:100%;height:110px;object-fit:cover;display:block}
-.pdf-img-cap{font-size:10px;padding:3px 5px;color:#444;border-top:1px solid #ccc;min-height:14px}
-.pdf-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:20px;text-align:center;font-size:12px}
-.pdf-sign-row div{border-top:1px solid #333;padding-top:6px}
-.pdf-footer{margin-top:24px;text-align:right;font-size:11px;color:#666}
+@page{size:A4;margin:16mm 14mm}
+*{box-sizing:border-box}
+body{font-family:'Segoe UI','Helvetica Neue',Arial,sans-serif;color:#1a1a2e;font-size:12.5px;line-height:1.55;margin:0;background:#fff}
+
+/* HEADER */
+.pdf-topbar{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:12px;margin-bottom:16px;border-bottom:3px solid #1d4ed8}
+.pdf-brand{display:flex;align-items:center;gap:10px}
+.pdf-logo{width:34px;height:34px;border-radius:8px;background:#1d4ed8;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;font-family:'Courier New',monospace}
+.pdf-brand-text{font-size:11px;color:#64748b;font-weight:600;letter-spacing:.5px}
+.pdf-doc-no{text-align:right;font-size:10.5px;color:#64748b}
+.pdf-doc-no b{color:#1a1a2e}
+
+.pdf-title-block{text-align:center;margin-bottom:18px}
+.pdf-title{font-size:21px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:#0f172a;margin-bottom:3px}
+.pdf-proj-name{font-size:14px;font-weight:600;color:#1d4ed8}
+.pdf-proj-owner{font-size:11px;color:#64748b;margin-top:2px}
+
+/* META INFO STRIP */
+.pdf-meta-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;margin-bottom:18px}
+.pdf-meta-item{padding:8px 12px;border-right:1px solid #e2e8f0;background:#f8fafc}
+.pdf-meta-item:last-child{border-right:none}
+.pdf-meta-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;color:#94a3b8;font-weight:600;margin-bottom:2px}
+.pdf-meta-val{font-size:12.5px;font-weight:700;color:#1a1a2e}
+
+/* SECTIONS */
+.pdf-section{margin-bottom:16px;page-break-inside:avoid}
+.pdf-section-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.pdf-section-num{width:22px;height:22px;border-radius:6px;background:#1d4ed8;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.pdf-section-title{font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#0f172a}
+.pdf-section-badge{margin-left:auto;font-size:10.5px;color:#64748b;font-weight:600}
+
+table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:2px;border:1px solid #cbd5e1;border-radius:6px;overflow:hidden}
+th{background:#1d4ed8;color:#fff;font-weight:600;padding:7px 9px;text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px}
+td{padding:6px 9px;border-top:1px solid #e2e8f0;color:#1e293b}
+tbody tr:nth-child(even){background:#f8fafc}
+.pdf-empty-row td{text-align:center;color:#94a3b8;font-style:italic;padding:10px}
+
+.badge{display:inline-block;padding:2px 9px;border-radius:10px;font-size:10px;font-weight:700}
+.badge-ok{background:#dcfce7;color:#15803d}
+.badge-off{background:#fee2e2;color:#b91c1c}
+.badge-warn{background:#fef3c7;color:#b45309}
+
+/* NOTE / OPINION BOXES */
+.pdf-note-box{border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;background:#f8fafc;white-space:pre-wrap;font-size:11.5px;color:#334155;min-height:18px}
+.pdf-opinion{display:grid;grid-template-columns:140px 1fr;gap:0;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;margin-bottom:6px}
+.pdf-opinion-label{background:#f1f5f9;padding:9px 12px;font-size:11px;font-weight:700;color:#334155;display:flex;align-items:center}
+.pdf-opinion-text{padding:9px 12px;font-size:11.5px;color:#1e293b;background:#fff}
+
+/* IMAGES — CSS Grid thật, không vỡ */
+.pdf-imgs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.pdf-img-card{border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:#fff;page-break-inside:avoid}
+.pdf-img-card img{width:100%;height:105px;object-fit:cover;display:block}
+.pdf-img-cap{font-size:10px;padding:5px 7px;color:#475569;border-top:1px solid #e2e8f0;background:#f8fafc;min-height:13px}
+.pdf-no-img{text-align:center;color:#94a3b8;font-size:11.5px;font-style:italic;padding:16px;border:1px dashed #cbd5e1;border-radius:8px}
+
+/* SIGNATURE */
+.pdf-sign-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:32px}
+.pdf-sign-col{text-align:center}
+.pdf-sign-role{font-size:11.5px;font-weight:700;color:#0f172a;text-transform:uppercase}
+.pdf-sign-sub{font-size:9.5px;color:#94a3b8;margin-bottom:46px}
+.pdf-sign-line{border-top:1.5px solid #334155;padding-top:5px;font-size:10px;color:#94a3b8}
+
+/* FOOTER */
+.pdf-footer{margin-top:24px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:9.5px;color:#94a3b8}
+
 @media print{.no-print{display:none}}
 </style>`;
 
-function buildDayPdfHtml(log, projName, dateDisp, imgs){
-  const ws=(log.workers||[]).map(w=>`<tr><td>${w.type}</td><td style="text-align:center">${w.qty}</td><td>${w.team||''}</td><td>${w.note||''}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
-  const es=(log.equipment||[]).map(e=>`<tr><td>${e.name}</td><td style="text-align:center">${e.qty}</td><td>${e.unit}</td><td>${e.task||''}</td><td>${e.status}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#999">Không có</td></tr>';
-  const bs=(log.bch||[]).map(b=>`<tr><td>${b.name}</td><td>${b.role}</td><td>${b.unit||''}</td><td style="text-align:center">${b.present?'Có mặt':'Vắng'}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
-  const xs=(log.xac_nhan||[]).map(x=>`<tr><td>${x.name}</td><td>${x.role}</td><td>${x.unit||''}</td><td style="text-align:center">${x.signed?'Đã ký':'Chưa ký'}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
-  const hms=(log.work_items||[]).filter(h=>h.hang_muc).map(h=>`<tr><td>${h.hang_muc}</td><td>${h.mo_ta||''}</td><td>${h.vi_tri||''}</td><td style="text-align:center">${h.khoi_luong||0} ${h.don_vi||''}</td><td>${h.to_doi||''}</td></tr>`).join('')||'<tr><td colspan="5" style="text-align:center;color:#999">Không có</td></tr>';
-  const nts=(log.nghiem_thu||[]).map(n=>`<tr><td>${n.hang_muc}</td><td>${n.vi_tri||''}</td><td>${n.nguoi_nghiem_thu||''}</td><td>${n.note||''}</td></tr>`).join('')||'<tr><td colspan="4" style="text-align:center;color:#999">Không có</td></tr>';
-  const yk=log.y_kien||{};
+function pdfBadge(text,type){
+  const cls=type==='ok'?'badge-ok':type==='off'?'badge-off':'badge-warn';
+  return `<span class="badge ${cls}">${text}</span>`;
+}
+
+function pdfDocHeader(projName, projOwner, docNo){
+  return `<div class="pdf-topbar">
+    <div class="pdf-brand">
+      <div class="pdf-logo">NK</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#0f172a">NhậtKý<span style="color:#1d4ed8">.TC</span></div>
+        <div class="pdf-brand-text">Hệ thống quản lý thi công</div>
+      </div>
+    </div>
+    <div class="pdf-doc-no">
+      <div>Số: <b>${docNo}</b></div>
+      <div>In lúc: ${new Date().toLocaleString('vi-VN')}</div>
+    </div>
+  </div>
+  <div class="pdf-title-block">
+    <div class="pdf-title">__TITLE__</div>
+    <div class="pdf-proj-name">${projName}</div>
+    ${projOwner?`<div class="pdf-proj-owner">Chủ đầu tư: ${projOwner}</div>`:''}
+  </div>`;
+}
+
+function pdfSection(num,title,innerHtml,badge){
+  return `<div class="pdf-section">
+    <div class="pdf-section-head">
+      <div class="pdf-section-num">${num}</div>
+      <div class="pdf-section-title">${title}</div>
+      ${badge?`<div class="pdf-section-badge">${badge}</div>`:''}
+    </div>
+    ${innerHtml}
+  </div>`;
+}
+
+function buildDayPdfHtml(log, projName, dateDisp, imgs, projOwner){
+  const ws=(log.workers||[]).map(w=>`<tr><td>${w.type}</td><td style="text-align:center;font-weight:700">${w.qty}</td><td>${w.team||'—'}</td><td>${w.note||'—'}</td></tr>`).join('')||'<tr class="pdf-empty-row"><td colspan="4">Không có dữ liệu</td></tr>';
   const totalWorkers=(log.workers||[]).reduce((s,w)=>s+(w.qty||0),0)||log.total_workers||0;
+
+  const es=(log.equipment||[]).map(e=>{
+    const st=e.status==='Hoạt động tốt'?pdfBadge(e.status,'ok'):e.status?.includes('Hỏng')?pdfBadge(e.status,'off'):pdfBadge(e.status||'—','warn');
+    return `<tr><td>${e.name}</td><td style="text-align:center">${e.qty}</td><td>${e.unit}</td><td>${e.task||'—'}</td><td>${st}</td></tr>`;
+  }).join('')||'<tr class="pdf-empty-row"><td colspan="5">Không có dữ liệu</td></tr>';
+
+  const bs=(log.bch||[]).map(b=>`<tr><td>${b.name}</td><td>${b.role}</td><td>${b.unit||'—'}</td><td style="text-align:center">${b.present?pdfBadge('Có mặt','ok'):pdfBadge('Vắng','off')}</td></tr>`).join('')||'<tr class="pdf-empty-row"><td colspan="4">Không có dữ liệu</td></tr>';
+  const xs=(log.xac_nhan||[]).map(x=>`<tr><td>${x.name}</td><td>${x.role}</td><td>${x.unit||'—'}</td><td style="text-align:center">${x.signed?pdfBadge('Đã ký','ok'):pdfBadge('Chưa ký','warn')}</td></tr>`).join('')||'<tr class="pdf-empty-row"><td colspan="4">Không có dữ liệu</td></tr>';
+  const hms=(log.work_items||[]).filter(h=>h.hang_muc).map(h=>`<tr><td>${h.hang_muc}</td><td>${h.mo_ta||'—'}</td><td>${h.vi_tri||'—'}</td><td style="text-align:center;font-weight:700">${h.khoi_luong||0} ${h.don_vi||''}</td><td>${h.to_doi||'—'}</td></tr>`).join('')||'<tr class="pdf-empty-row"><td colspan="5">Không có dữ liệu</td></tr>';
+  const nts=(log.nghiem_thu||[]).map(n=>`<tr><td>${n.hang_muc}</td><td>${n.vi_tri||'—'}</td><td>${n.nguoi_nghiem_thu||'—'}</td><td>${n.note||'—'}</td></tr>`).join('')||'<tr class="pdf-empty-row"><td colspan="4">Không có dữ liệu</td></tr>';
+  const yk=log.y_kien||{};
+
   const imgHtml=imgs?.length?`<div class="pdf-imgs">${imgs.slice(0,12).map(i=>{
     const cap=localStorage.getItem('nk_imgcap_'+(i.public_id||i.filename))||'';
-    return`<div class="pdf-img-card"><img src="${i.url}"><div class="pdf-img-cap">${cap}</div></div>`;
-  }).join('')}</div>`:'<p style="color:#999;font-size:12px">Không có ảnh</p>';
+    return`<div class="pdf-img-card"><img src="${i.url}" crossorigin="anonymous"><div class="pdf-img-cap">${cap||'&nbsp;'}</div></div>`;
+  }).join('')}</div>`:'<div class="pdf-no-img">📷 Không có ảnh hiện trường</div>';
+
+  const docNo=`NK-${dateDisp.replace(/\//g,'')}`;
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Nhật ký ${dateDisp}</title>${PDF_STYLE}</head><body>
-    <div class="pdf-header">
-      <div class="pdf-title">Nhật ký thi công</div>
-      <div class="pdf-sub">${projName}</div>
-    </div>
-    <div class="pdf-meta">
-      <span><strong>Ngày:</strong> ${dateDisp}</span>
-      <span><strong>Thời tiết:</strong> ${log.weather_morning||''} (sáng) / ${log.weather_afternoon||''} (chiều)</span>
-      <span><strong>Tổng nhân công:</strong> ${totalWorkers} người</span>
+    ${pdfDocHeader(projName,projOwner,docNo).replace('__TITLE__','Nhật ký thi công')}
+
+    <div class="pdf-meta-strip">
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Ngày</div><div class="pdf-meta-val">${dateDisp}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Thời tiết sáng</div><div class="pdf-meta-val">${log.weather_morning||'—'}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Thời tiết chiều</div><div class="pdf-meta-val">${log.weather_afternoon||'—'}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Tổng nhân công</div><div class="pdf-meta-val">${totalWorkers} người</div></div>
     </div>
 
-    <div class="pdf-section"><div class="pdf-section-title">I. Nhân công</div><table><thead><tr><th>Loại</th><th>SL</th><th>Tổ/Đội</th><th>Ghi chú</th></tr></thead><tbody>${ws}</tbody></table></div>
-    <div class="pdf-section"><div class="pdf-section-title">II. Máy móc thiết bị</div><table><thead><tr><th>Tên máy</th><th>SL</th><th>ĐVT</th><th>Công tác</th><th>Trạng thái</th></tr></thead><tbody>${es}</tbody></table></div>
-    <div class="pdf-section"><div class="pdf-section-title">III. Ban chỉ huy công trường</div><table><thead><tr><th>Họ tên</th><th>Chức vụ</th><th>Đơn vị</th><th>Có mặt</th></tr></thead><tbody>${bs}</tbody></table></div>
-    <div class="pdf-section"><div class="pdf-section-title">IV. Xác nhận nhật ký (Giám sát / CĐT)</div><table><thead><tr><th>Họ tên</th><th>Chức vụ</th><th>Đơn vị</th><th>Đã ký</th></tr></thead><tbody>${xs}</tbody></table></div>
-    <div class="pdf-section"><div class="pdf-section-title">V. Hạng mục thi công</div><table><thead><tr><th>Công tác</th><th>Mô tả</th><th>Vị trí</th><th>Khối lượng</th><th>Tổ đội</th></tr></thead><tbody>${hms}</tbody></table></div>
-    <div class="pdf-section"><div class="pdf-section-title">VI. Nghiệm thu công tác</div><table><thead><tr><th>Công tác</th><th>Vị trí</th><th>Người nghiệm thu</th><th>Ghi chú</th></tr></thead><tbody>${nts}</tbody></table></div>
-    <div class="pdf-section"><div class="pdf-section-title">VII. Ý kiến các bên</div>
-      <p><strong>Nhà thầu:</strong> ${yk.nha_thau||'(không có)'}</p>
-      <p><strong>Tư vấn giám sát:</strong> ${yk.tvgs||'(không có)'}</p>
-      <p><strong>Chủ đầu tư:</strong> ${yk.cdt||'(không có)'}</p>
-    </div>
-    <div class="pdf-section"><div class="pdf-section-title">VIII. Ghi chú & Khó khăn</div><div class="pdf-note">${log.note||'(không có)'}</div></div>
-    <div class="pdf-section"><div class="pdf-section-title">IX. Hình ảnh hiện trường</div>${imgHtml}</div>
+    ${pdfSection('I','Nhân công',`<table><thead><tr><th>Loại nhân công</th><th>SL</th><th>Tổ/Đội</th><th>Ghi chú</th></tr></thead><tbody>${ws}</tbody></table>`)}
+    ${pdfSection('II','Máy móc thiết bị',`<table><thead><tr><th>Tên máy</th><th>SL</th><th>ĐVT</th><th>Công tác</th><th>Trạng thái</th></tr></thead><tbody>${es}</tbody></table>`)}
+    ${pdfSection('III','Ban chỉ huy công trường',`<table><thead><tr><th>Họ tên</th><th>Chức vụ</th><th>Đơn vị</th><th>Có mặt</th></tr></thead><tbody>${bs}</tbody></table>`,'Nhà thầu')}
+    ${pdfSection('IV','Xác nhận nhật ký',`<table><thead><tr><th>Họ tên</th><th>Chức vụ</th><th>Đơn vị</th><th>Đã ký</th></tr></thead><tbody>${xs}</tbody></table>`,'Giám sát / CĐT')}
+    ${pdfSection('V','Hạng mục thi công',`<table><thead><tr><th>Công tác</th><th>Mô tả</th><th>Vị trí</th><th>Khối lượng</th><th>Tổ đội</th></tr></thead><tbody>${hms}</tbody></table>`)}
+    ${pdfSection('VI','Nghiệm thu công tác',`<table><thead><tr><th>Công tác</th><th>Vị trí</th><th>Người nghiệm thu</th><th>Ghi chú</th></tr></thead><tbody>${nts}</tbody></table>`)}
+    ${pdfSection('VII','Ý kiến các bên',`
+      <div class="pdf-opinion"><div class="pdf-opinion-label">Nhà thầu</div><div class="pdf-opinion-text">${yk.nha_thau||'(không có ý kiến)'}</div></div>
+      <div class="pdf-opinion"><div class="pdf-opinion-label">Tư vấn giám sát</div><div class="pdf-opinion-text">${yk.tvgs||'(không có ý kiến)'}</div></div>
+      <div class="pdf-opinion"><div class="pdf-opinion-label">Chủ đầu tư</div><div class="pdf-opinion-text">${yk.cdt||'(không có ý kiến)'}</div></div>
+    `)}
+    ${pdfSection('VIII','Ghi chú & khó khăn',`<div class="pdf-note-box">${log.note||'(không có ghi chú)'}</div>`)}
+    ${pdfSection('IX','Hình ảnh hiện trường',imgHtml,imgs?.length?imgs.length+' ảnh':'')}
 
     <div class="pdf-sign-row">
-      <div>Chỉ huy trưởng</div>
-      <div>Giám sát</div>
-      <div>Chủ đầu tư</div>
+      <div class="pdf-sign-col"><div class="pdf-sign-role">Chỉ huy trưởng</div><div class="pdf-sign-sub">(Ký, ghi rõ họ tên)</div><div class="pdf-sign-line">Nhà thầu thi công</div></div>
+      <div class="pdf-sign-col"><div class="pdf-sign-role">Giám sát</div><div class="pdf-sign-sub">(Ký, ghi rõ họ tên)</div><div class="pdf-sign-line">Tư vấn giám sát</div></div>
+      <div class="pdf-sign-col"><div class="pdf-sign-role">Chủ đầu tư</div><div class="pdf-sign-sub">(Ký, ghi rõ họ tên)</div><div class="pdf-sign-line">Đại diện CĐT</div></div>
     </div>
-    <div class="pdf-footer">In từ NhậtKý.TC — ${new Date().toLocaleString('vi-VN')}</div>
 
-    <scr"+"ipt>window.onload=()=>setTimeout(()=>window.print(),400)</scr"+"ipt>
+    <div class="pdf-footer">
+      <span>NhậtKý.TC — Hệ thống quản lý thi công số hóa</span>
+      <span>Trang 1/1 · ${docNo}</span>
+    </div>
+
+    <scr"+"ipt>window.onload=()=>setTimeout(()=>window.print(),500)</scr"+"ipt>
   </body></html>`;
 }
 
@@ -1681,7 +1775,7 @@ async function exportDayPDF(){
   let imgs=[];
   try{const r=await fetch(`/images?proj=${curProj.id}&date=${dateYMD}`);const d=await r.json();imgs=d.images||[]}catch{}
 
-  const html=buildDayPdfHtml(log,curProj.name,toDisp(curDate),imgs);
+  const html=buildDayPdfHtml(log,curProj.name,toDisp(curDate),imgs,curProj.owner);
   const w=window.open('','_blank');
   w.document.write(html);
   w.document.close();
@@ -1701,8 +1795,8 @@ async function exportRangePDF(){
   for(let d=new Date(from);d<=to;d.setDate(d.getDate()+1))days.push(new Date(d));
   if(days.length>31){toast('Tối đa 31 ngày/lần xuất','err');return}
 
-  let sections='';
-  let dayCount=0;
+  let rows='';
+  let dayCount=0,totalRainDays=0,totalWorkerDays=0;
   for(const d of days){
     const ymd=toYMD(d);
     let log=null;
@@ -1711,26 +1805,52 @@ async function exportRangePDF(){
     else{try{const r=await fetch(`/load_log?proj=${curProj.id}&date=${ymd}`);const dd=await r.json();log=dd.log}catch{}}
     if(!log)continue;
     dayCount++;
+    if(log.weather_rain)totalRainDays++;
     const totalWorkers=(log.workers||[]).reduce((s,w)=>s+(w.qty||0),0)||log.total_workers||0;
-    const hmSum=(log.work_items||[]).filter(h=>h.hang_muc).map(h=>h.hang_muc+(h.vi_tri?' @ '+h.vi_tri:'')).join('; ')||'(không có)';
-    sections+=`<div class="pdf-section" style="page-break-inside:avoid">
-      <div class="pdf-section-title">${toDisp(d)} — ${log.weather_morning||''}/${log.weather_afternoon||''} — 👷 ${totalWorkers} người</div>
-      <p style="font-size:12px;margin:4px 0"><strong>Hạng mục:</strong> ${hmSum}</p>
-      ${log.note?`<p style="font-size:12px;margin:4px 0"><strong>Ghi chú:</strong> ${log.note}</p>`:''}
-    </div>`;
+    totalWorkerDays+=totalWorkers;
+    const hmSum=(log.work_items||[]).filter(h=>h.hang_muc).map(h=>h.hang_muc+(h.vi_tri?' @ '+h.vi_tri:'')).join(', ')||'—';
+    const weatherBadge=log.weather_rain?pdfBadge('Mưa','off'):pdfBadge('Thuận lợi','ok');
+    rows+=`<tr>
+      <td style="font-weight:700;white-space:nowrap">${toDisp(d)}</td>
+      <td style="text-align:center">${weatherBadge}</td>
+      <td style="text-align:center;font-weight:700">${totalWorkers}</td>
+      <td style="font-size:11px">${hmSum}</td>
+      <td style="font-size:11px">${log.note||'—'}</td>
+    </tr>`;
   }
 
   if(!dayCount){toast('Không có dữ liệu trong khoảng ngày này','err');return}
 
+  const docNo=`BC-${toYMD(from)}-${toYMD(to)}`;
+
   const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Báo cáo tổng hợp</title>${PDF_STYLE}</head><body>
-    <div class="pdf-header">
-      <div class="pdf-title">Báo cáo tổng hợp thi công</div>
-      <div class="pdf-sub">${curProj.name}</div>
-      <div class="pdf-sub">Từ ${toDisp(from)} đến ${toDisp(to)} — ${dayCount}/${days.length} ngày có dữ liệu</div>
+    ${pdfDocHeader(curProj.name,curProj.owner,docNo).replace('__TITLE__','Báo cáo tổng hợp thi công')}
+
+    <div style="text-align:center;font-size:11.5px;color:#64748b;margin-bottom:16px">
+      Từ <b>${toDisp(from)}</b> đến <b>${toDisp(to)}</b> &nbsp;·&nbsp; ${dayCount}/${days.length} ngày có dữ liệu
     </div>
-    ${sections}
-    <div class="pdf-footer">In từ NhậtKý.TC — ${new Date().toLocaleString('vi-VN')}</div>
-    <scr"+"ipt>window.onload=()=>setTimeout(()=>window.print(),400)</scr"+"ipt>
+
+    <div class="pdf-meta-strip">
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Tổng ngày ghi nhận</div><div class="pdf-meta-val">${dayCount} ngày</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Ngày mưa</div><div class="pdf-meta-val">${totalRainDays} ngày</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Ngày thuận lợi</div><div class="pdf-meta-val">${dayCount-totalRainDays} ngày</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">Tổng lượt nhân công</div><div class="pdf-meta-val">${totalWorkerDays}</div></div>
+    </div>
+
+    ${pdfSection('I','Tổng hợp theo ngày',`<table><thead><tr><th style="width:14%">Ngày</th><th style="width:12%;text-align:center">Thời tiết</th><th style="width:10%;text-align:center">NC</th><th style="width:38%">Hạng mục thi công</th><th style="width:26%">Ghi chú</th></tr></thead><tbody>${rows}</tbody></table>`)}
+
+    <div class="pdf-sign-row">
+      <div class="pdf-sign-col"><div class="pdf-sign-role">Chỉ huy trưởng</div><div class="pdf-sign-sub">(Ký, ghi rõ họ tên)</div><div class="pdf-sign-line">Nhà thầu thi công</div></div>
+      <div class="pdf-sign-col"><div class="pdf-sign-role">Giám sát</div><div class="pdf-sign-sub">(Ký, ghi rõ họ tên)</div><div class="pdf-sign-line">Tư vấn giám sát</div></div>
+      <div class="pdf-sign-col"><div class="pdf-sign-role">Chủ đầu tư</div><div class="pdf-sign-sub">(Ký, ghi rõ họ tên)</div><div class="pdf-sign-line">Đại diện CĐT</div></div>
+    </div>
+
+    <div class="pdf-footer">
+      <span>NhậtKý.TC — Hệ thống quản lý thi công số hóa</span>
+      <span>${docNo}</span>
+    </div>
+
+    <scr"+"ipt>window.onload=()=>setTimeout(()=>window.print(),500)</scr"+"ipt>
   </body></html>`;
 
   const w=window.open('','_blank');
